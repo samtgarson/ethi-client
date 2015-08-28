@@ -1,3 +1,4 @@
 angular.module("templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("features/_feature/_feature.html","\n");
-$templateCache.put("patterns/_pattern/_pattern.html","\n");
-$templateCache.put("features/home/_home.html","<section>\n  welcome home\n</section>\n");}]);
+$templateCache.put("features/home/_home.html","<section>\n  <a href=\"https://api.instagram.com/oauth/authorize/?client_id=437d58ca6b5c41c48a3867101f09f76c&amp;redirect_uri=http://localhost:3000/process&amp;response_type=code\">login</a>\n</section>\n");
+$templateCache.put("features/process/_process.html","<div ng-if=\"token\">\n  <a ng-click=\"getStream()\">Get Stream</a><a ng-click=\"getMe()\">Get Me</a><a ng-click=\"logout()\">Logout</a>\n</div>\n");
+$templateCache.put("patterns/_pattern/_pattern.html","\n");}]);

@@ -43,5 +43,10 @@ angular.module('states', [])
                 'url'               : '/',
                 'templateUrl': templater('home'), 
                 'controller': 'homeController'
+            })
+            .state('process', {
+                'url'               : '/process',
+                'templateUrl': templater('process'), 
+                'controller': 'processController'
             });
     });

@@ -897,7 +897,8 @@ h5, .h5 {
   display: inline-block; }
 
 input, textarea, button, select, a {
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0); }
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  display: block; }
 
 .clickable {
   cursor: pointer; }

@@ -5,6 +5,7 @@ angular.module('app', [
     'ngAnimate',
     'ngResource',
     'ngSanitize',
+    'ngCookies',
 
     // App
     'templates',
@@ -12,7 +13,8 @@ angular.module('app', [
     'services',
 
     // Features
-    'home'
+    'home',
+    'process'
     
     // Patterns
 ])

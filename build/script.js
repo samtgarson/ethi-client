@@ -5390,7 +5390,7 @@
                 }
                 return match;
             });
-            message += "\nhttp://errors.angularjs.org/1.4.0/" + (module ? module + "/" : "") + code;
+            message += "\nhttp://errors.angularjs.org/1.4.1/" + (module ? module + "/" : "") + code;
             for (i = SKIP_INDEXES, paramPrefix = "?"; i < templateArgs.length; i++, paramPrefix = "&") {
                 message += paramPrefix + "p" + (i - SKIP_INDEXES) + "=" + encodeURIComponent(toDebugString(templateArgs[i]));
             }
@@ -5626,9 +5626,13 @@
         }
         if (!destination) {
             destination = source;
-            if (source) {
+            if (isObject(source)) {
+                var index;
+                if (stackSource && (index = stackSource.indexOf(source)) !== -1) {
+                    return stackDest[index];
+                }
                 if (isArray(source)) {
-                    destination = copy(source, [], stackSource, stackDest);
+                    return copy(source, [], stackSource, stackDest);
                 } else if (isTypedArray(source)) {
                     destination = new source.constructor(source);
                 } else if (isDate(source)) {
@@ -5636,9 +5640,13 @@
                 } else if (isRegExp(source)) {
                     destination = new RegExp(source.source, source.toString().match(/[^\/]*$/)[0]);
                     destination.lastIndex = source.lastIndex;
-                } else if (isObject(source)) {
+                } else {
                     var emptyObject = Object.create(getPrototypeOf(source));
-                    destination = copy(source, emptyObject, stackSource, stackDest);
+                    return copy(source, emptyObject, stackSource, stackDest);
+                }
+                if (stackDest) {
+                    stackSource.push(source);
+                    stackDest.push(destination);
                 }
             }
         } else {
@@ -5646,8 +5654,6 @@
             stackSource = stackSource || [];
             stackDest = stackDest || [];
             if (isObject(source)) {
-                var index = stackSource.indexOf(source);
-                if (index !== -1) return stackDest[index];
                 stackSource.push(source);
                 stackDest.push(destination);
             }
@@ -5655,12 +5661,7 @@
             if (isArray(source)) {
                 destination.length = 0;
                 for (var i = 0; i < source.length; i++) {
-                    result = copy(source[i], null, stackSource, stackDest);
-                    if (isObject(source[i])) {
-                        stackSource.push(source[i]);
-                        stackDest.push(result);
-                    }
-                    destination.push(result);
+                    destination.push(copy(source[i], null, stackSource, stackDest));
                 }
             } else {
                 var h = destination.$$hashKey;
@@ -5673,18 +5674,18 @@
                 }
                 if (isBlankObject(source)) {
                     for (key in source) {
-                        putValue(key, source[key], destination, stackSource, stackDest);
+                        destination[key] = copy(source[key], null, stackSource, stackDest);
                     }
                 } else if (source && typeof source.hasOwnProperty === "function") {
                     for (key in source) {
                         if (source.hasOwnProperty(key)) {
-                            putValue(key, source[key], destination, stackSource, stackDest);
+                            destination[key] = copy(source[key], null, stackSource, stackDest);
                         }
                     }
                 } else {
                     for (key in source) {
                         if (hasOwnProperty.call(source, key)) {
-                            putValue(key, source[key], destination, stackSource, stackDest);
+                            destination[key] = copy(source[key], null, stackSource, stackDest);
                         }
                     }
                 }
@@ -5692,14 +5693,6 @@
             }
         }
         return destination;
-        function putValue(key, val, destination, stackSource, stackDest) {
-            var result = copy(val, null, stackSource, stackDest);
-            if (isObject(val)) {
-                stackSource.push(val);
-                stackDest.push(result);
-            }
-            destination[key] = result;
-        }
     }
     function shallowCopy(src, dst) {
         if (isArray(src)) {
@@ -6125,16 +6118,16 @@
                         _runBlocks: runBlocks,
                         requires: requires,
                         name: name,
-                        provider: invokeLater("$provide", "provider"),
-                        factory: invokeLater("$provide", "factory"),
-                        service: invokeLater("$provide", "service"),
+                        provider: invokeLaterAndSetModuleName("$provide", "provider"),
+                        factory: invokeLaterAndSetModuleName("$provide", "factory"),
+                        service: invokeLaterAndSetModuleName("$provide", "service"),
                         value: invokeLater("$provide", "value"),
                         constant: invokeLater("$provide", "constant", "unshift"),
-                        decorator: invokeLater("$provide", "decorator"),
-                        animation: invokeLater("$animateProvider", "register"),
-                        filter: invokeLater("$filterProvider", "register"),
-                        controller: invokeLater("$controllerProvider", "register"),
-                        directive: invokeLater("$compileProvider", "directive"),
+                        decorator: invokeLaterAndSetModuleName("$provide", "decorator"),
+                        animation: invokeLaterAndSetModuleName("$animateProvider", "register"),
+                        filter: invokeLaterAndSetModuleName("$filterProvider", "register"),
+                        controller: invokeLaterAndSetModuleName("$controllerProvider", "register"),
+                        directive: invokeLaterAndSetModuleName("$compileProvider", "directive"),
                         config: config,
                         run: function(block) {
                             runBlocks.push(block);
@@ -6149,6 +6142,13 @@
                         if (!queue) queue = invokeQueue;
                         return function() {
                             queue[insertMethod || "push"]([ provider, method, arguments ]);
+                            return moduleInstance;
+                        };
+                    }
+                    function invokeLaterAndSetModuleName(provider, method) {
+                        return function(recipeName, factoryFunction) {
+                            if (factoryFunction && isFunction(factoryFunction)) factoryFunction.$$moduleName = name;
+                            invokeQueue.push([ provider, method, arguments ]);
                             return moduleInstance;
                         };
                     }
@@ -6178,11 +6178,11 @@
         return obj;
     }
     var version = {
-        full: "1.4.0",
+        full: "1.4.1",
         major: 1,
         minor: 4,
-        dot: 0,
-        codeName: "jaracimrman-existence"
+        dot: 1,
+        codeName: "hyperionic-illumination"
     };
     function publishExternalAPI(angular) {
         extend(angular, {
@@ -6361,6 +6361,12 @@
     function jqLiteAcceptsData(node) {
         var nodeType = node.nodeType;
         return nodeType === NODE_TYPE_ELEMENT || !nodeType || nodeType === NODE_TYPE_DOCUMENT;
+    }
+    function jqLiteHasData(node) {
+        for (var key in jqCache[node.ng339]) {
+            return true;
+        }
+        return false;
     }
     function jqLiteBuildFragment(html, context) {
         var tmp, tag, wrap, fragment = context.createDocumentFragment(), nodes = [], i;
@@ -6639,7 +6645,8 @@
     }
     forEach({
         data: jqLiteData,
-        removeData: jqLiteRemoveData
+        removeData: jqLiteRemoveData,
+        hasData: jqLiteHasData
     }, function(fn, name) {
         JQLite[name] = fn;
     });
@@ -7117,7 +7124,7 @@
             return instanceInjector.invoke(provider.$get, provider, undefined, serviceName);
         });
         forEach(loadModules(modulesToLoad), function(fn) {
-            instanceInjector.invoke(fn || noop);
+            if (fn) instanceInjector.invoke(fn);
         });
         return instanceInjector;
         function supportObject(delegate) {
@@ -7614,7 +7621,7 @@
                     cacheState();
                     lastHistoryState = cachedState;
                 } else {
-                    if (!sameBase) {
+                    if (!sameBase || reloadLocation) {
                         reloadLocation = url;
                     }
                     if (replace) {
@@ -7892,6 +7899,7 @@
                                 if (isObject(bindings.isolateScope)) {
                                     directive.$$isolateBindings = bindings.isolateScope;
                                 }
+                                directive.$$moduleName = directiveFactory.$$moduleName;
                                 directives.push(directive);
                             } catch (e) {
                                 $exceptionHandler(e);
@@ -8160,7 +8168,7 @@
                                 childScope = scope;
                             }
                             if (nodeLinkFn.transcludeOnThisElement) {
-                                childBoundTranscludeFn = createBoundTranscludeFn(scope, nodeLinkFn.transclude, parentBoundTranscludeFn, nodeLinkFn.elementTranscludeOnThisElement);
+                                childBoundTranscludeFn = createBoundTranscludeFn(scope, nodeLinkFn.transclude, parentBoundTranscludeFn);
                             } else if (!nodeLinkFn.templateOnThisElement && parentBoundTranscludeFn) {
                                 childBoundTranscludeFn = parentBoundTranscludeFn;
                             } else if (!parentBoundTranscludeFn && transcludeFn) {
@@ -8175,7 +8183,7 @@
                     }
                 }
             }
-            function createBoundTranscludeFn(scope, transcludeFn, previousBoundTranscludeFn, elementTransclusion) {
+            function createBoundTranscludeFn(scope, transcludeFn, previousBoundTranscludeFn) {
                 var boundTranscludeFn = function(transcludedScope, cloneFn, controllers, futureParentElement, containingScope) {
                     if (!transcludedScope) {
                         transcludedScope = scope.$new(false, containingScope);
@@ -8241,6 +8249,12 @@
                     break;
 
                   case NODE_TYPE_TEXT:
+                    if (msie === 11) {
+                        while (node.parentNode && node.nextSibling && node.nextSibling.nodeType === NODE_TYPE_TEXT) {
+                            node.nodeValue = node.nodeValue + node.nextSibling.nodeValue;
+                            node.parentNode.removeChild(node.nextSibling);
+                        }
+                    }
                     addTextInterpolateDirective(directives, node.nodeValue);
                     break;
 
@@ -8405,7 +8419,6 @@
                 }
                 nodeLinkFn.scope = newScopeDirective && newScopeDirective.scope === true;
                 nodeLinkFn.transcludeOnThisElement = hasTranscludeDirective;
-                nodeLinkFn.elementTranscludeOnThisElement = hasElementTranscludeDirective;
                 nodeLinkFn.templateOnThisElement = hasTemplate;
                 nodeLinkFn.transclude = childTranscludeFn;
                 previousCompileContext.hasElementTranscludeDirective = hasElementTranscludeDirective;
@@ -8526,7 +8539,7 @@
                             var controllerResult = controller();
                             if (controllerResult !== controller.instance) {
                                 controller.instance = controllerResult;
-                                $element.data("$" + directive.name + "Controller", controllerResult);
+                                $element.data("$" + i + "Controller", controllerResult);
                                 if (controller === controllerForBindings) {
                                     thisLinkFn.$$destroyBindings();
                                     thisLinkFn.$$destroyBindings = initializeDirectiveBindings(scope, attrs, controllerResult, bindings, scopeDirective);
@@ -8712,8 +8725,11 @@
                 return a.index - b.index;
             }
             function assertNoDuplicate(what, previousDirective, directive, element) {
+                function wrapModuleNameIfDefined(moduleName) {
+                    return moduleName ? " (module: " + moduleName + ")" : "";
+                }
                 if (previousDirective) {
-                    throw $compileMinErr("multidir", "Multiple directives [{0}, {1}] asking for {2} on: {3}", previousDirective.name, directive.name, what, startingTag(element));
+                    throw $compileMinErr("multidir", "Multiple directives [{0}{1}, {2}{3}] asking for {4} on: {5}", previousDirective.name, wrapModuleNameIfDefined(previousDirective.$$moduleName), directive.name, wrapModuleNameIfDefined(directive.$$moduleName), what, startingTag(element));
                 }
             }
             function addTextInterpolateDirective(directives, text) {
@@ -8822,12 +8838,14 @@
                 }
                 var fragment = document.createDocumentFragment();
                 fragment.appendChild(firstElementToRemove);
-                jqLite(newNode).data(jqLite(firstElementToRemove).data());
-                if (!jQuery) {
-                    delete jqLite.cache[firstElementToRemove[jqLite.expando]];
-                } else {
-                    skipDestroyOnNextJQueryCleanData = true;
-                    jQuery.cleanData([ firstElementToRemove ]);
+                if (jqLite.hasData(firstElementToRemove)) {
+                    jqLite(newNode).data(jqLite(firstElementToRemove).data());
+                    if (!jQuery) {
+                        delete jqLite.cache[firstElementToRemove[jqLite.expando]];
+                    } else {
+                        skipDestroyOnNextJQueryCleanData = true;
+                        jQuery.cleanData([ firstElementToRemove ]);
+                    }
                 }
                 for (var k = 1, kk = elementsToRemove.length; k < kk; k++) {
                     var element = elementsToRemove[k];
@@ -8854,8 +8872,14 @@
                 var onNewScopeDestroyed;
                 forEach(bindings, function(definition, scopeName) {
                     var attrName = definition.attrName, optional = definition.optional, mode = definition.mode, lastValue, parentGet, parentSet, compare;
+                    if (!hasOwnProperty.call(attrs, attrName)) {
+                        attrs[attrName] = undefined;
+                    }
                     switch (mode) {
                       case "@":
+                        if (!attrs[attrName] && !optional) {
+                            destination[scopeName] = undefined;
+                        }
                         attrs.$observe(attrName, function(value) {
                             destination[scopeName] = value;
                         });
@@ -8904,7 +8928,6 @@
                         break;
 
                       case "&":
-                        if (!attrs.hasOwnProperty(attrName) && optional) break;
                         parentGet = $parse(attrs[attrName]);
                         if (parentGet === noop && optional) break;
                         destination[scopeName] = function(locals) {
@@ -11110,8 +11133,10 @@
                                 nameId.name = ast.property.name;
                             }
                         }
-                        recursionFn(intoId);
+                    }, function() {
+                        self.assign(intoId, "undefined");
                     });
+                    recursionFn(intoId);
                 }, !!create);
                 break;
 
@@ -11150,8 +11175,10 @@
                             }
                             expression = self.ensureSafeObject(expression);
                             self.assign(intoId, expression);
-                            recursionFn(intoId);
+                        }, function() {
+                            self.assign(intoId, "undefined");
                         });
+                        recursionFn(intoId);
                     });
                 }
                 break;
@@ -12146,6 +12173,7 @@
             result.resolve(value);
             return result.promise.then(callback, errback, progressBack);
         };
+        var resolve = when;
         function all(promises) {
             var deferred = new Deferred(), counter = 0, results = isArray(promises) ? [] : {};
             forEach(promises, function(promise, key) {
@@ -12184,6 +12212,7 @@
         $Q.defer = defer;
         $Q.reject = reject;
         $Q.when = when;
+        $Q.resolve = resolve;
         $Q.all = all;
         return $Q;
     }
@@ -13975,7 +14004,7 @@
     var ISO_DATE_REGEXP = /\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z)/;
     var URL_REGEXP = /^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/;
     var EMAIL_REGEXP = /^[a-z0-9!#$%&'*+\/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i;
-    var NUMBER_REGEXP = /^\s*(\-|\+)?(\d+|(\d*(\.\d*)))\s*$/;
+    var NUMBER_REGEXP = /^\s*(\-|\+)?(\d+|(\d*(\.\d*)))([eE][+-]?\d+)?\s*$/;
     var DATE_REGEXP = /^(\d{4})-(\d{2})-(\d{2})$/;
     var DATETIMELOCAL_REGEXP = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)(?::(\d\d)(\.\d{1,3})?)?$/;
     var WEEK_REGEXP = /^(\d{4})-W(\d\d)$/;
@@ -15152,7 +15181,9 @@
     function isObjectEmpty(obj) {
         if (obj) {
             for (var prop in obj) {
-                return false;
+                if (obj.hasOwnProperty(prop)) {
+                    return false;
+                }
             }
         }
         return true;
@@ -15212,6 +15243,7 @@
                     var watchedArray = [];
                     values = values || [];
                     Object.keys(values).forEach(function getWatchable(key) {
+                        if (key.charAt(0) === "$") return;
                         var locals = getLocals(values[key], key);
                         var selectValue = getTrackByValueFn(values[key], locals);
                         watchedArray.push(selectValue);
@@ -15474,7 +15506,7 @@
                     ngModelCtrl.$render();
                     if (!ngModelCtrl.$isEmpty(previousValue)) {
                         var nextValue = selectCtrl.readValue();
-                        if (ngOptions.trackBy && !equals(previousValue, nextValue) || previousValue !== nextValue) {
+                        if (ngOptions.trackBy ? !equals(previousValue, nextValue) : previousValue !== nextValue) {
                             ngModelCtrl.$setViewValue(nextValue);
                             ngModelCtrl.$render();
                         }
@@ -21678,12 +21710,92 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
         };
     } ]);
 })(window, window.angular);
+(function(window, angular, undefined) {
+    "use strict";
+    angular.module("ngCookies", [ "ng" ]).provider("$cookies", [ function $CookiesProvider() {
+        var defaults = this.defaults = {};
+        function calcOptions(options) {
+            return options ? angular.extend({}, defaults, options) : defaults;
+        }
+        this.$get = [ "$$cookieReader", "$$cookieWriter", function($$cookieReader, $$cookieWriter) {
+            return {
+                get: function(key) {
+                    return $$cookieReader()[key];
+                },
+                getObject: function(key) {
+                    var value = this.get(key);
+                    return value ? angular.fromJson(value) : value;
+                },
+                getAll: function() {
+                    return $$cookieReader();
+                },
+                put: function(key, value, options) {
+                    $$cookieWriter(key, value, calcOptions(options));
+                },
+                putObject: function(key, value, options) {
+                    this.put(key, angular.toJson(value), options);
+                },
+                remove: function(key, options) {
+                    $$cookieWriter(key, undefined, calcOptions(options));
+                }
+            };
+        } ];
+    } ]);
+    angular.module("ngCookies").factory("$cookieStore", [ "$cookies", function($cookies) {
+        return {
+            get: function(key) {
+                return $cookies.getObject(key);
+            },
+            put: function(key, value) {
+                $cookies.putObject(key, value);
+            },
+            remove: function(key) {
+                $cookies.remove(key);
+            }
+        };
+    } ]);
+    function $$CookieWriter($document, $log, $browser) {
+        var cookiePath = $browser.baseHref();
+        var rawDocument = $document[0];
+        function buildCookieString(name, value, options) {
+            var path, expires;
+            options = options || {};
+            expires = options.expires;
+            path = angular.isDefined(options.path) ? options.path : cookiePath;
+            if (value === undefined) {
+                expires = "Thu, 01 Jan 1970 00:00:00 GMT";
+                value = "";
+            }
+            if (angular.isString(expires)) {
+                expires = new Date(expires);
+            }
+            var str = encodeURIComponent(name) + "=" + encodeURIComponent(value);
+            str += path ? ";path=" + path : "";
+            str += options.domain ? ";domain=" + options.domain : "";
+            str += expires ? ";expires=" + expires.toUTCString() : "";
+            str += options.secure ? ";secure" : "";
+            var cookieLength = str.length + 1;
+            if (cookieLength > 4096) {
+                $log.warn("Cookie '" + name + "' possibly not set or overflowed because it was too large (" + cookieLength + " > 4096 bytes)!");
+            }
+            return str;
+        }
+        return function(name, value, options) {
+            rawDocument.cookie = buildCookieString(name, value, options);
+        };
+    }
+    $$CookieWriter.$inject = [ "$document", "$log", "$browser" ];
+    angular.module("ngCookies").provider("$$cookieWriter", function $$CookieWriterProvider() {
+        this.$get = $$CookieWriter;
+    });
+})(window, window.angular);
 angular.module("templates", []).run([ "$templateCache", function($templateCache) {
     $templateCache.put("features/_feature/_feature.html", "\n");
+    $templateCache.put("features/home/_home.html", '<section>\n  <a href="https://api.instagram.com/oauth/authorize/?client_id=437d58ca6b5c41c48a3867101f09f76c&amp;redirect_uri=http://localhost:3000/process&amp;response_type=code">login</a>\n</section>\n');
+    $templateCache.put("features/process/_process.html", '<div ng-if="token">\n  <a ng-click="getStream()">Get Stream</a><a ng-click="getMe()">Get Me</a><a ng-click="logout()">Logout</a>\n</div>\n');
     $templateCache.put("patterns/_pattern/_pattern.html", "\n");
-    $templateCache.put("features/home/_home.html", "<section>\n  welcome home\n</section>\n");
 } ]);
-angular.module("services", []);
+angular.module("services", []).value("Endpoint", "http://localhost:8081/");
 angular.module("states", []).run(function($rootScope, $state) {}).config(function($stateProvider, $stickyStateProvider, $urlRouterProvider, $locationProvider, $httpProvider) {
     $httpProvider.interceptors.push(function($q, $rootScope, $location) {
         return {
@@ -21711,10 +21823,76 @@ angular.module("states", []).run(function($rootScope, $state) {}).config(functio
         url: "/",
         templateUrl: templater("home"),
         controller: "homeController"
+    }).state("process", {
+        url: "/process",
+        templateUrl: templater("process"),
+        controller: "processController"
     });
 });
 angular.module("<%= name%>", []).controller("<%= name%>Controller", function($scope) {});
-angular.module("home", []).controller("homeController", function($scope) {});
+angular.module("home", []).controller("homeController", function($scope, $cookies, $state) {
+    var token = $cookies.get("token");
+    if (token) $state.go("process");
+});
+angular.module("process", []).controller("processController", function($scope, $location, $http, $cookies, $state, Endpoint) {
+    $scope.token = $cookies.get("token");
+    if (!$scope.token && !$location.search().code) {
+        $state.go("home");
+    } else if (!$scope.token) {
+        $http.post(Endpoint + "/login", {
+            code: $location.search().code
+        }).then(process);
+    }
+    function process(r) {
+        if (r.status == 200) {
+            $scope.token = r.data.token;
+            $cookies.put("token", r.data.token);
+            $http({
+                url: Endpoint + "/me",
+                method: "GET",
+                headers: {
+                    "x-access-token": $scope.token
+                }
+            });
+        } else {
+            $state.go("home");
+        }
+    }
+    $scope.logout = function() {
+        $cookies.remove("token");
+        $state.go("home");
+    };
+    $scope.getStream = function(r) {
+        $http({
+            url: Endpoint + "/me/stream",
+            method: "GET",
+            headers: {
+                "x-access-token": $scope.token
+            }
+        }).then(function(r) {
+            if (r.status == 200) {
+                console.log(r);
+            } else if (r.status == 400) {
+                $scope.logout();
+            }
+        });
+    };
+    $scope.getMe = function(r) {
+        $http({
+            url: Endpoint + "/me",
+            method: "GET",
+            headers: {
+                "x-access-token": $scope.token
+            }
+        }).then(function(r) {
+            if (r.status == 200) {
+                console.log(r);
+            } else if (r.status == 400) {
+                $scope.logout();
+            }
+        });
+    };
+});
 angular.module("<%= name%>", []).directive("<%= bigname%>", function() {
     return {
         restrict: "E",
@@ -21723,6 +21901,6 @@ angular.module("<%= name%>", []).directive("<%= bigname%>", function() {
         templateUrl: "patterns/<%= name%>/_<%= name%>.html"
     };
 }).controller("<%= name%>Controller", function($scope, $element) {});
-angular.module("app", [ "ui.router", "ct.ui.router.extras", "ngAnimate", "ngResource", "ngSanitize", "templates", "states", "services", "home" ]).config(function() {}).controller("appController", function($scope) {
+angular.module("app", [ "ui.router", "ct.ui.router.extras", "ngAnimate", "ngResource", "ngSanitize", "ngCookies", "templates", "states", "services", "home", "process" ]).config(function() {}).controller("appController", function($scope) {
     $scope.hello = "hello world";
 });

@@ -22,14 +22,15 @@ gulp.task('print', function() {
 gulp.task('connect', function() {
   $.connect.server({
     root: ['build'],
-    fallback: 'build/index.html'
+    fallback: 'build/index.html',
+    port: 8888
   });
 });
 
 // Task for live injection
 gulp.task('browser-sync', function() {
     return browserSync({
-      proxy: 'localhost:8080',
+      proxy: 'localhost:8888',
       open: false,
       minify: false,
       files: ['build/index.html', 'build/script.js'],
