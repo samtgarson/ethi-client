@@ -1,5 +1,5 @@
 # Etho
 
-> Personal dashboard for your Instagram account
+> Insight Engine for Instagram (Frontend Client)
 
 Client in AngularJS
