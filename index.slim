@@ -14,5 +14,7 @@ html lang="en" ng-app="app" ng-controller="appController"
             script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"
 
     body breakpoint="{0:'small', 750:'mid', 1100:''}" 
-        nav {{hello}}
-        ui-view
+        nav 
+            img#logo src="img/etho_white.svg"
+            img#menu src="img/menu.svg"
+        div.ui-view.module-wrapper

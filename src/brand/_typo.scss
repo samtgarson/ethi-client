@@ -12,3 +12,16 @@ h5, .h5 { font-size: 130%; font-weight: 300; line-height: calc(130% * 1.2); disp
 @mixin alt-font() {
     
 }
+
+body {
+  font: normal normal 300 30px/150% 'Campton', Helvetica, sans-serif;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}

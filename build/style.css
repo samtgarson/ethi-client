@@ -859,6 +859,20 @@
     -webkit-transform: perspective(300px) rotateY(0deg);
     opacity: 1; }
 
+.button {
+  text-align: center;
+  padding: 20px;
+  font-size: 0.87em; }
+
+.button--white {
+  background-color: #fff; }
+
+.button--instagram {
+  background-image: url('img/ico/instagram.svg');
+  background-repeat: no-repeat;
+  background-position: left 30px center;
+  padding-left: 75px; }
+
 h1, .h1 {
   font-size: 300%;
   letter-spacing: -2px;
@@ -896,6 +910,76 @@ h5, .h5 {
   line-height: calc(130% * 1.2);
   display: inline-block; }
 
+body {
+  font: normal normal 300 30px/150% 'Campton', Helvetica, sans-serif; }
+
+p {
+  margin: 0; }
+
+a {
+  text-decoration: none;
+  color: inherit; }
+
+body {
+  background: #f6f6f6 url('img/bg.png');
+  padding: 0;
+  margin: 0; }
+
+nav {
+  position: fixed;
+  background: #002cff;
+  left: 0;
+  top: 0;
+  width: 230px;
+  height: 110px;
+  color: #fff;
+  padding: 42px 30px;
+  box-sizing: border-box; }
+  nav #logo {
+    float: left; }
+  nav #menu {
+    float: right; }
+  @media only screen and (max-width: 700px) {
+    nav {
+      width: 100%;
+      height: 70px;
+      padding: 16px 20px; } }
+
+.module-wrapper {
+  max-width: 450px;
+  width: 100%;
+  margin: 30vh auto 0;
+  padding-top: 50vh;
+  margin-top: -265px; }
+  @media only screen and (max-width: 700px) {
+    .module-wrapper {
+      padding-top: 0;
+      margin-top: 120px; } }
+
+.module {
+  width: 100%;
+  display: block;
+  background-color: #fff;
+  box-sizing: border-box; }
+  .module .module__half {
+    padding: 60px; }
+    .module .module__half:first-child {
+      padding-bottom: 55px; }
+    .module .module__half:last-child {
+      padding-top: 55px; }
+  .module .whole {
+    padding: 60px; }
+
+.module--home {
+  background: #ffd81f url('img/default_module.png') no-repeat center center;
+  background-size: cover;
+  background-blend-mode: soft-light; }
+  .module--home p {
+    font-weight: 500; }
+  .module--home .module__half--dark {
+    background-color: rgba(255, 0, 0, 0.1); }
+
+/* No files to import found in patterns//** */
 input, textarea, button, select, a {
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   display: block; }
