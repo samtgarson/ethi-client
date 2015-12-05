@@ -21792,9 +21792,14 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
 angular.module("templates", []).run([ "$templateCache", function($templateCache) {
     $templateCache.put("features/_feature/_feature.html", "\n");
     $templateCache.put("features/home/_home.html", '<section class="module module--home">\n  <div class="module__half">\n    <p>\n      <img src="img/etho_black.svg" /> analyses your activity, behaviour and tastes to generate your personal insight profile.\n    </p>\n  </div>\n  <div class="module__half module__half--dark">\n    <a class="button button--white button--instagram" href="https://api.instagram.com/oauth/authorize/?client_id=437d58ca6b5c41c48a3867101f09f76c&amp;redirect_uri=http://localhost:3000/process&amp;response_type=code">Instagram Login</a>\n  </div>\n</section>\n');
-    $templateCache.put("features/process/_process.html", '<div ng-if="token">\n  <a ng-click="getStream()">Get Stream</a><a ng-click="getMe()">Get Me</a><a ng-click="logout()">Logout</a>\n</div>\n');
+    $templateCache.put("features/process/_process.html", "\n");
+    $templateCache.put("features/profile/_profile.html", '<section class="module module--profile" title="profile">\n  <div class="module__whole">\n    <img class="avatar" ng-src="{{user.profile_picture}}" />\n    <p>\n      {{user.name}}\n    </p>\n  </div>\n</section>\n<section class="module module--colour" title="colour">\n  <div class="module__half"></div>\n</section>\n');
 } ]);
-angular.module("services", []).value("Endpoint", "http://localhost:8081/");
+angular.module("services", []).value("Endpoint", "http://localhost:8081/").factory("Api", function(Endpoint, $resource) {
+    return function(key) {
+        return $resource(Endpoint + key, {}, {});
+    };
+});
 angular.module("states", []).run(function($rootScope, $state) {}).config(function($stateProvider, $stickyStateProvider, $urlRouterProvider, $locationProvider, $httpProvider) {
     $httpProvider.interceptors.push(function($q, $rootScope, $location) {
         return {
@@ -21826,29 +21831,38 @@ angular.module("states", []).run(function($rootScope, $state) {}).config(functio
         url: "/process",
         templateUrl: templater("process"),
         controller: "processController"
+    }).state("profile", {
+        url: "/profile",
+        templateUrl: templater("profile"),
+        controller: "profileController",
+        resolve: {
+            User: function($stateParams, Api) {
+                return $stateParams.user || Api("me").get().$promise;
+            },
+            Profile: function(Api) {
+                return Api("me/profile").get().$promise;
+            }
+        }
     });
 });
 angular.module("<%= name%>", []).controller("<%= name%>Controller", function($scope) {});
+angular.module("home", []).controller("homeController", function($scope, $cookies, $state) {});
 angular.module("process", []).controller("processController", function($scope, $location, $http, $cookies, $state, Endpoint) {
-    $scope.token = $cookies.get("token");
-    if (!$scope.token && !$location.search().code) {
+    var token = $cookies.get("token");
+    if (!token && !$location.search().code) {
         $state.go("home");
-    } else if (!$scope.token) {
+    } else if (!token) {
         $http.post(Endpoint + "/login", {
             code: $location.search().code
         }).then(process);
+    } else {
+        $state.go("profile");
     }
     function process(r) {
         if (r.status == 200) {
-            $scope.token = r.data.token;
+            token = r.data.token;
             $cookies.put("token", r.data.token);
-            $http({
-                url: Endpoint + "/me",
-                method: "GET",
-                headers: {
-                    "x-access-token": $scope.token
-                }
-            });
+            $http.defaults.headers.common["X-ACCESS-TOKEN"] = token;
         } else {
             $state.go("home");
         }
@@ -21857,41 +21871,12 @@ angular.module("process", []).controller("processController", function($scope, $
         $cookies.remove("token");
         $state.go("home");
     };
-    $scope.getStream = function(r) {
-        $http({
-            url: Endpoint + "/me/stream",
-            method: "GET",
-            headers: {
-                "x-access-token": $scope.token
-            }
-        }).then(function(r) {
-            if (r.status == 200) {
-                console.log(r);
-            } else if (r.status == 400) {
-                $scope.logout();
-            }
-        });
-    };
-    $scope.getMe = function(r) {
-        $http({
-            url: Endpoint + "/me",
-            method: "GET",
-            headers: {
-                "x-access-token": $scope.token
-            }
-        }).then(function(r) {
-            if (r.status == 200) {
-                console.log(r);
-            } else if (r.status == 400) {
-                $scope.logout();
-            }
-        });
-    };
 });
-angular.module("home", []).controller("homeController", function($scope, $cookies, $state) {
-    var token = $cookies.get("token");
-    if (token) $state.go("process");
+angular.module("profile", []).controller("profileController", function($scope, $stateParams, User) {
+    $scope.user = User;
 });
-angular.module("app", [ "ui.router", "ct.ui.router.extras", "ngAnimate", "ngResource", "ngSanitize", "ngCookies", "templates", "states", "services", "home", "process" ]).config(function() {}).controller("appController", function($scope) {
+angular.module("app", [ "ui.router", "ct.ui.router.extras", "ngAnimate", "ngResource", "ngSanitize", "ngCookies", "templates", "states", "services", "home", "process", "profile" ]).run(function($http, $cookies) {
+    $http.defaults.headers.common["X-ACCESS-TOKEN"] = $cookies.get("token");
+}).controller("appController", function($scope) {
     $scope.hello = "hello world";
 });

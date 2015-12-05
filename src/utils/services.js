@@ -1,3 +1,7 @@
-angular.module('services', [])
-    // .value('Endpoint', 'http://insta-dash-api.herokuapp.com')
-    .value('Endpoint', 'http://localhost:8081/');
+angular.module ('services', [])
+    .value ('Endpoint', 'http://localhost:8081/')
+    .factory ('Api', function (Endpoint, $resource) {
+      return function (key) {
+        return $resource(Endpoint + key, {}, {});
+      };
+    });

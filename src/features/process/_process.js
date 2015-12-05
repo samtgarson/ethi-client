@@ -1,23 +1,19 @@
 angular.module('process', [])
     .controller('processController', function($scope, $location, $http, $cookies, $state, Endpoint) {
-        $scope.token = $cookies.get('token');
-        if (!$scope.token && !$location.search().code) {
+        var token = $cookies.get('token');
+        if (!token && !$location.search().code) {
             $state.go('home');
-        } else if (!$scope.token) {
+        } else if (!token) {
             $http.post(Endpoint + '/login', {code: $location.search().code}).then(process);
+        } else {
+            $state.go('profile');
         }
 
         function process (r) {
             if (r.status == 200) {
-                $scope.token = r.data.token;
+                token = r.data.token;
                 $cookies.put('token', r.data.token);
-                $http({
-                    url:Endpoint + '/me',
-                    method: "GET",
-                    headers: {
-                        'x-access-token': $scope.token
-                    }
-                });
+                $http.defaults.headers.common['X-ACCESS-TOKEN'] = token;
             } else {
                 $state.go('home');
             }
@@ -26,38 +22,5 @@ angular.module('process', [])
         $scope.logout = function () {
             $cookies.remove('token');
             $state.go('home');
-        };
-
-        $scope.getStream = function (r) {
-            $http({
-                url:Endpoint + '/me/stream',
-                method: "GET",
-                headers: {
-                    'x-access-token': $scope.token
-                }
-            })
-                .then(function(r){
-                    if (r.status == 200) {
-                        console.log(r);
-                    } else if (r.status == 400) {
-                        $scope.logout();
-                    }
-                });
-        };
-        $scope.getMe = function (r) {
-            $http({
-                url:Endpoint + '/me',
-                method: "GET",
-                headers: {
-                    'x-access-token': $scope.token
-                }
-            })
-                .then(function(r){
-                    if (r.status == 200) {
-                        console.log(r);
-                    } else if (r.status == 400) {
-                        $scope.logout();
-                    }
-                });
         };
     });

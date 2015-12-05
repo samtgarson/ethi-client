@@ -14,13 +14,14 @@ angular.module('app', [
 
     // Features
     'home',
-    'process'
+    'process',
+    'profile'
     
     // Patterns
 ])
 
-    .config(function() {
-
+    .run(function($http, $cookies) {
+      $http.defaults.headers.common['X-ACCESS-TOKEN'] = $cookies.get('token');
     })
 
     .controller('appController', function ($scope) {

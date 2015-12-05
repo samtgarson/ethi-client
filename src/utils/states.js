@@ -48,5 +48,17 @@ angular.module('states', [])
                 'url'               : '/process',
                 'templateUrl': templater('process'), 
                 'controller': 'processController'
+            })
+            .state('profile', {
+                'url'               : '/profile',
+                'templateUrl': templater('profile'), 
+                'controller': 'profileController',
+                'resolve': {
+                    'User': function ($stateParams, Api) {
+                        return $stateParams.user || Api('me').get().$promise;
+                    }, 'Profile': function (Api) {
+                        return Api('me/profile').get().$promise;
+                    }
+                }
             });
     });
